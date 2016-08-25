@@ -11,7 +11,7 @@ import os
 from ckanapi import RemoteCKAN, NotAuthorized # submodule to use for accessing a remote ckan instance from laptop
 
 # Set your API key
-apikey = '92bc3556-a1ef-44bb-b637-4df926e8bbea' 
+apikey = '' 
 
 # Set your CKAN remote destination
 site = RemoteCKAN('http://energydata.uct.ac.za', apikey)

@@ -45,7 +45,7 @@ pprint.pprint(result)
 
 # Select your desired CKAN API POST action function (create, update, patch, delete)
 action= 'package_create'
-api_key= '92bc3556-a1ef-44bb-b637-4df926e8bbea' # your API key
+api_key= '' # your API key
 
 # Set the parts that make up your full url. If unsure of the inputs, the function can be reverse engineered with urllib.parse.urlparse(your_url)
 scheme='http'
