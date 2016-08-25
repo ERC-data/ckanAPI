@@ -1,5 +1,6 @@
 *.ods
 *.xls*
 *.csv
+*.R*
 *__pycache__
 

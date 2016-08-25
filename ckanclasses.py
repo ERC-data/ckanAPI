@@ -7,13 +7,17 @@ from ckanapi import RemoteCKAN, NotAuthorized
 
 class CkanBase(object):
     """
-    A base class for creating CKAN data objects. CkanBase takes the input
+    A base class for creating CKAN data objects. CkanBase takes a list of (key,value) pairs or keyword arguments as  input
     
     Attributes:
-        properties: a dict 
+        key, value pairs or keyword arguements passed to the object during instance initiation
+    
+    Methods:
+        properties: a dict of key value pairs passed with which the instance was initiated
+        keys: keys used in properties
+        values: values used in properties
         
     Call CkanKeys.organisation for a list of all properties.
-    
     """
 
     def __init__(self, items=(), **kws):
@@ -55,10 +59,16 @@ class Organisation(CkanBase):
     Call CkanKeys.organisation for a list of all properties.
     
     """
-
+    def create(self, apikey, url='http://energydata.uct.ac.za'):
+            site = RemoteCKAN(url, apikey)
+            try:
+                site.action.organization_create(self.properties()) 
+            except NotAuthorized:
+                print('denied')
 
 class Dataset(CkanBase):
-    """Define all required parameters to identify a dataset. Datasets have the following properties:
+    """
+    Define all required parameters to identify a dataset. Datasets have the following properties:
     
     Attributes:
         name:
@@ -72,19 +82,19 @@ class Dataset(CkanBase):
         owner_org: Datasets must belong to an organsation.
         
     Call CkanKeys.dataset for a list of all properties.
-    
     """
 
         
     def create(self, apikey, url='http://energydata.uct.ac.za'):
             site = RemoteCKAN(url, apikey)
             try:
-                site.action.package_create(self) 
+                site.action.package_create(self.properties()) 
             except NotAuthorized:
                 print('denied')
                 
 class Resource(CkanBase):
-    """Define all required parameters to identify a data resource as part of a data set.
+    """
+    Define all required parameters to identify a data resource as part of a data set.
     
     Attributes:
         package_id:        
@@ -94,13 +104,12 @@ class Resource(CkanBase):
         upload: full path to file to upload
         
     Call CkanKeys.resource for a list of all properties.
-    
     """ 
                 
     def create(self, apikey, url='http://energydata.uct.ac.za'):
             site = RemoteCKAN(url, apikey)
             try:
-                site.action.resource_create(self) 
+                site.action.resource_create(self.properties()) 
             except NotAuthorized:
                 print('denied')
 
