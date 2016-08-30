@@ -5,6 +5,52 @@ This script defines classes to use with ckanapi for data management
 
 from ckanapi import RemoteCKAN, NotAuthorized
 
+url='http://energydata.uct.ac.za'
+
+# This function shows the details of a CKAN data object (organisation, dataset or resource)
+def show(name, apikey=None ):
+    datatype = input('Is this an organisation, a dataset or a resource?\n\n').lower().strip()
+    site = RemoteCKAN(url, apikey) 
+    if datatype == 'organisation':
+        try:
+            return site.action.organization_show(id=name, include_groups=False, include_tags=False,  include_followers=False)
+        except Exception:
+            print('This is not a valid organisation')
+    if datatype == 'dataset':
+        try:        
+            return site.action.package_show(id=name)
+        except Exception:
+            print('This is not a valid dataset')
+    if datatype == 'resource':
+        try:        
+            return site.action.resource_show(id=name)
+        except Exception:
+            print('This is not a valid resource')
+    else:
+        print('Oops. Use a valid name and type a valid data type. This can be an organisation, dataset or resource.')
+ 
+# This function shows all CKAN data objects for a search term (organisation, dataset or resource)   
+def search(query, apikey=None):
+    datatype = input('Are you looking for an organisation, a dataset or a resource?\n\n').lower().strip()    
+    site = RemoteCKAN(url, apikey)
+    if datatype == 'organisation':    
+        try:
+            return site.action.organization_autocomplete(q=query)
+        except Exception:
+            print('No organisation exists for this search term')
+    if datatype == 'dataset': 
+        try:
+            return site.action.package_autocomplete(q=query)
+        except Exception:
+            print('No dataset exists for this search term')
+    if datatype == 'resource': 
+        try:
+            return site.action.resource_search(query=query)
+        except Exception:
+            print('No resource exists for this search term')        
+    else:
+        print('Please try a different search query and type a valid data type. This can be an organisation, dataset or resource.')
+
 class CkanBase(object):
     """
     A base class for creating CKAN data objects. CkanBase takes a list of (key,value) pairs or keyword arguments as  input
@@ -13,33 +59,16 @@ class CkanBase(object):
         url: site url; defaults to http://energydata.uct.ac.za
         key, value pairs or keyword arguements passed to the object during instance initiation
     
-    METHODS:
-        properties: a dict of key value pairs with which the instance was initiated
-        keys: keys used in properties
-        values: values used in properties
+    To see all attributes, use vars(object)
         
     Call CkanKeys.organisation for a list of default properties.
     """
-    url='http://energydata.uct.ac.za'
     
     def __init__(self, items=(), **kws):
         attrs = dict(items)
-        attrs.update(kws)
-        required_attrs = ()
-        if any([name in attrs for name in required_attrs]):
-            raise ValueError('You have not specified the required properties')
-        
+        attrs.update(kws)        
         for key, value in attrs.items():
             setattr(self, key, value)
-        
-    def properties(self):        
-        return self.__dict__
-        
-    def keys(self):
-        return self.__dict__.keys()
-        
-    def values(self):    
-        return self.__dict__.values()
 
 class CkanKeys(object):
     
@@ -67,15 +96,12 @@ class Organisation(CkanBase):
         
     Call CkanKeys.organisation for a list of default properties.
     """       
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# functions using action.create and action.patch
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    
-    def create(self, apikey, url=url):
+# functions using action.create and action.patch    
+    def create(self, apikey):
         site = RemoteCKAN(url, apikey)
         options = ('name', 'title', 'parent', 'description', 'image_url') # define API parameters allowed in function call
         required = ('name')
-        d = {k : self.properties().get(k, None) for k in options} # create a dict consisting only of permitted key:value pairs
+        d = {k : vars(self).get(k, None) for k in options} # create a dict consisting only of permitted key:value pairs
         if all([name in d for name in required]):
             pass
         else:
@@ -85,10 +111,10 @@ class Organisation(CkanBase):
         except NotAuthorized:
             print('denied') # print 'denied' if call not authorised
             
-    def member_add(self, url=url, apikey, username, role):
+    def add_member(self, apikey, username, role):
         site = RemoteCKAN(url, apikey)
         options = ('name')
-        d = {k : self.properties().get(k, None) for k in options}
+        d = {k : vars(self).get(k, None) for k in options}
         d['id'] = d.pop('name')
         d['username'] = username
         d['role'] = role
@@ -97,26 +123,8 @@ class Organisation(CkanBase):
         except NotAuthorized:
             print('denied')
             
-    def update(self, apikey=None, url=url):
+    def update(self, apikey=None):
         site = RemoteCKAN(url, apikey)
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~
-# functions using action.get
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~
-                
-    def show(self, apikey=None, url=url):
-        site = RemoteCKAN(url, apikey=None)
-        try:
-            return site.action.organization_show(id=self.properties()['name'], include_groups=False, include_tags=False,  include_followers=False)
-        except NotAuthorized:    
-            print('denied')
-            
-    def search(query, apikey=None, url=url):
-        site = RemoteCKAN(url, apikey)
-        try:
-            return site.action.organization_autocomplete(q=query)
-        except NotAuthorized:
-            print('denied')
 
 class Dataset(CkanBase):
     """
@@ -134,15 +142,17 @@ class Dataset(CkanBase):
         owner_org: Datasets must belong to an organsation.
         
     Call CkanKeys.dataset for a list of default properties.
-    """
-
-        
-    def create(self, apikey, url='http://energydata.uct.ac.za'):
+    """        
+    def create(self, apikey):
             site = RemoteCKAN(url, apikey)
             try:
-                site.action.package_create(self.properties()) 
+                site.action.package_create(vars(self)) 
             except NotAuthorized:
                 print('denied')
+                
+    def update():
+        site.action.package_patch(d)
+        
                 
 class Resource(CkanBase):
     """
@@ -158,7 +168,7 @@ class Resource(CkanBase):
     Call CkanKeys.resource for a list of all properties.
     """ 
                 
-    def create(self, apikey, url='http://energydata.uct.ac.za'):
+    def create(self, apikey):
             site = RemoteCKAN(url, apikey)
             try:
                 site.action.resource_create(self.properties()) 
@@ -169,10 +179,3 @@ class Resource(CkanBase):
 organisation = dict(zip(CkanKeys.organisation, vals))    
 pd.Series(organisation)
 
-class Project(Organisation):
-    def __init__(self, name, title, description='', parent='ERC'):
-        Organisation.__init__(self, name, title, description, parent)
-        
-    
-#########################
-        
