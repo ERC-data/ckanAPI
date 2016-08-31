@@ -4,52 +4,56 @@ This script defines classes to use with ckanapi for data management
 """
 
 from ckanapi import RemoteCKAN, NotAuthorized
+import pandas as pd
 
 url='http://energydata.uct.ac.za'
 
 # This function shows the details of a CKAN data object (organisation, dataset or resource)
-def show(name, apikey=None ):
-    datatype = input('Is this an organisation, a dataset or a resource?\n\n').lower().strip()
-    site = RemoteCKAN(url, apikey) 
-    if datatype == 'organisation':
+def show(name, datatype=None, apikey=None ):
+    site = RemoteCKAN(url, apikey)     
+    if datatype == None: 
+        datatype = input('Is this an organisation, a project, a dataset or a resource?\n\n').lower().strip()
+    if datatype == any(['organisation', 'project']):
         try:
-            return site.action.organization_show(id=name, include_groups=False, include_tags=False,  include_followers=False)
+            d = site.action.organization_show(id=name, include_groups=False, include_tags=False,  include_followers=False, include_users=False)
         except Exception:
-            print('This is not a valid organisation')
+            print('This is neither a valid organisation nor a valid project')
     if datatype == 'dataset':
         try:        
-            return site.action.package_show(id=name)
+            d = site.action.package_show(id=name)
         except Exception:
             print('This is not a valid dataset')
     if datatype == 'resource':
         try:        
-            return site.action.resource_show(id=name)
+            d = site.action.resource_show(id=name)
         except Exception:
             print('This is not a valid resource')
     else:
         print('Oops. Use a valid name and type a valid data type. This can be an organisation, dataset or resource.')
+    return pd.DataFrame(d)
  
 # This function shows all CKAN data objects for a search term (organisation, dataset or resource)   
-def search(query, apikey=None):
-    datatype = input('Are you looking for an organisation, a dataset or a resource?\n\n').lower().strip()    
+def search(query, datatype=None, apikey=None):
+    if datatype == None: datatype = input('Are you looking for an organisation, a project, a dataset or a resource?\n\n').lower().strip()    
     site = RemoteCKAN(url, apikey)
-    if datatype == 'organisation':    
+    if datatype == any(['organisation', 'project']):    
         try:
-            return site.action.organization_autocomplete(q=query)
+            d = site.action.organization_autocomplete(q=query)
         except Exception:
-            print('No organisation exists for this search term')
+            print('No organisation or project exists for this search term')
     if datatype == 'dataset': 
         try:
-            return site.action.package_autocomplete(q=query)
+            d = site.action.package_autocomplete(q=query)
         except Exception:
             print('No dataset exists for this search term')
     if datatype == 'resource': 
         try:
-            return site.action.resource_search(query=query)
+            d = site.action.resource_search(query=query)
         except Exception:
             print('No resource exists for this search term')        
     else:
         print('Please try a different search query and type a valid data type. This can be an organisation, dataset or resource.')
+    return pd.DataFrame(d)
 
 class CkanBase(object):
     """
@@ -176,6 +180,6 @@ class Resource(CkanBase):
                 print('denied')
 
 #########################
-organisation = dict(zip(CkanKeys.organisation, vals))    
-pd.Series(organisation)
+#organisation = dict(zip(CkanKeys.organisation, vals))    
+#pd.Series(organisation)
 
