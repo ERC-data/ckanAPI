@@ -1,6 +1,26 @@
 # -*- coding: utf-8 -*-
 """
-This script defines classes to use with ckanapi for data management
+This script defines classes and functions to use with ckanapi for easy data management.
+
+Variables:
+    url
+    
+Functions:
+    show(name, datatype=None, apikey=None)
+    search(query, datatype=None, apikey=None)
+
+Classes & Methods:
+    CkanBase(builtins.object)
+        __init__(self, items=(), **kws)
+    Organisation(CkanBase)
+        create(self, apikey)
+        add_member(self, apikey, username, role)
+        update(self, apikey)
+    Dataset(CkanBase)
+        create(self, apikey)
+        update(self, apikey)
+    Resource(CkanBase)
+        create(self, apikey)
 """
 
 from ckanapi import RemoteCKAN, NotAuthorized
@@ -8,59 +28,88 @@ import pandas as pd
 
 url='http://energydata.uct.ac.za'
 
-# This function shows the details of a CKAN data object (organisation, dataset or resource)
 def show(name, datatype=None, apikey=None ):
+    """Takes a string input and returns an existing CKAN object.
+    
+    Arguments:
+    name -- valid name or id of CKAN data object. 
+            For 'resource' datatypes this must be the 36 digit 'id'.       
+    datatype -- organisation, dataset or resource (default None)
+    apikey -- a valid CKAN API key. Private datasets will only be shown to authorised API keys 
+                (default None)
+    """
     site = RemoteCKAN(url, apikey)     
+    d = {} #create empty dict object to contain API call results
     if datatype == None: 
-        datatype = input('Is this an organisation, a project, a dataset or a resource?\n\n').lower().strip()
-    if datatype == any(['organisation', 'project']):
+        datatype = input('Is this an organisation, a dataset or a resource?\n\n').lower().strip()   
+    
+    if datatype == 'organisation':#any(['organisation', 'project']):
         try:
-            d = site.action.organization_show(id=name, include_groups=False, include_tags=False,  include_followers=False, include_users=False)
+            d = site.action.organization_show(id=name, include_datasets=True, 
+                                              include_groups=False, include_tags=False,  
+                                              include_followers=False, include_users=False)
         except Exception:
             print('This is neither a valid organisation nor a valid project')
-    if datatype == 'dataset':
+    elif datatype == 'dataset':
         try:        
             d = site.action.package_show(id=name)
         except Exception:
             print('This is not a valid dataset')
-    if datatype == 'resource':
+    elif datatype == 'resource':
         try:        
             d = site.action.resource_show(id=name)
         except Exception:
             print('This is not a valid resource')
     else:
         print('Oops. Use a valid name and type a valid data type. This can be an organisation, dataset or resource.')
-    return pd.DataFrame(d)
- 
-# This function shows all CKAN data objects for a search term (organisation, dataset or resource)   
+    
+    if len(d) > 0: return pd.Series(d)
+
+  
 def search(query, datatype=None, apikey=None):
-    if datatype == None: datatype = input('Are you looking for an organisation, a project, a dataset or a resource?\n\n').lower().strip()    
+    """Takes a string input and returns search results matching existing CKAN objects (organisation, dataset or resource).
+    
+    Arguments:
+    query -- a single search term 
+             For 'resource' datatypes this defaults to searching the resource name. 
+             Additional arguments can be added using the following syntax: 'query1 field2:query2'
+             Valid resource fields can be used as field terms for the search.
+    datatype -- organisation, dataset or resource (default None)
+    apikey -- valid CKAN API key (default None)
+              Private datasets will only be shown to authorised API keys 
+    """
     site = RemoteCKAN(url, apikey)
-    if datatype == any(['organisation', 'project']):    
+    d = [] #create empty list object to contain API call results
+    if datatype == None: datatype = input('Are you looking for an organisation, a dataset or a resource?\n\n').lower().strip()    
+
+    if datatype == 'organisation':#any(['organisation', 'project']):    
         try:
             d = site.action.organization_autocomplete(q=query)
         except Exception:
             print('No organisation or project exists for this search term')
-    if datatype == 'dataset': 
+    elif datatype == 'dataset': 
         try:
             d = site.action.package_autocomplete(q=query)
+            for i in d: i.pop('match_displayed') #remove match_displayed:value pair from dicts
         except Exception:
             print('No dataset exists for this search term')
-    if datatype == 'resource': 
+    elif datatype == 'resource': 
         try:
-            d = site.action.resource_search(query=query)
+            query = ''.join(['name:', query])
+            d = site.action.resource_search(query=query.split(" "))['results']
         except Exception:
             print('No resource exists for this search term')        
     else:
         print('Please try a different search query and type a valid data type. This can be an organisation, dataset or resource.')
-    return pd.DataFrame(d)
+   
+    if len(d) > 0: return pd.DataFrame(d).T
+
 
 class CkanBase(object):
     """
-    A base class for creating CKAN data objects. CkanBase takes a list of (key,value) pairs or keyword arguments as  input
+    A base class for creating CKAN data objects. CkanBase takes a list of (key,value) pairs or keyword arguments as input
     
     ATTRIBUTES:
-        url: site url; defaults to http://energydata.uct.ac.za
         key, value pairs or keyword arguements passed to the object during instance initiation
     
     To see all attributes, use vars(object)
@@ -84,19 +133,20 @@ class Organisation(CkanBase):
     """
     A CKAN organisation with the following properties:
     
-    ATTRIBUTES:
-        name: The reference ID of the organisation as a string. Can only be lowercase letters, numbers and '-'.
-        title: The title of the organisation as a string.
-        description: A description of the organisation as a string (optional).
-        parent: The parent organisation as a string (optional).
-        image_url: URL to an image on the internet.
+    Options:
+    name: The reference ID of the organisation as a string. 
+            Can only be lowercase letters, numbers and '-'.
+    title: The title of the organisation as a string.
+    description: A description of the organisation as a string (optional).
+    parent: The parent organisation as a string (optional).
+    image_url: URL to an image on the internet.
         
-    METHODS:
-        create: Requires attribute 'name' (string) and argument 'apikey'. Optional arguments 'title', 'parent', 'description', 'image_url'
-        member_add: Requires attribute 'name' (string) and arguments 'apikey', 'username' (string), 'role' (string) one of ['member', 'editor', 'admin']
-        update:         
-        show: requires keywords 'name', '', ''
-        search:  requires query string
+    Methods:
+    create: Requires attribute 'name' (string) and argument 'apikey'. 
+            Optional arguments 'title', 'parent', 'description', 'image_url'
+    member_add: Requires attribute 'name' (string) and arguments 'apikey', 
+            'username' (string), 'role' (string) one of ['member', 'editor', 'admin']
+    update:         
         
     Call CkanKeys.organisation for a list of default properties.
     """       
