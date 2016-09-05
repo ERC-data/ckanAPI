@@ -29,21 +29,21 @@ import pandas as pd
 url='http://energydata.uct.ac.za'
 
 def show(name, datatype=None, apikey=None ):
-    """Takes a string input and returns an existing CKAN object.
+    """Takes a string input and returns an existing CKAN object (organisation, dataset or resource).
     
     Arguments:
     name -- valid name or id of CKAN data object. 
             For 'resource' datatypes this must be the 36 digit 'id'.       
-    datatype -- organisation, dataset or resource (default None)
+    datatype -- organisation, project, dataset or resource (default None)
     apikey -- a valid CKAN API key. Private datasets will only be shown to authorised API keys 
                 (default None)
     """
     site = RemoteCKAN(url, apikey)     
     d = {} #create empty dict object to contain API call results
     if datatype == None: 
-        datatype = input('Is this an organisation, a dataset or a resource?\n\n').lower().strip()   
+        datatype = input('Is this an organisation, a project, a dataset or a resource?\n\n').lower().strip()   
     
-    if datatype == 'organisation':#any(['organisation', 'project']):
+    if datatype == 'organisation' or datatype == 'project':
         try:
             d = site.action.organization_show(id=name, include_datasets=True, 
                                               include_groups=False, include_tags=False,  
@@ -61,7 +61,7 @@ def show(name, datatype=None, apikey=None ):
         except Exception:
             print('This is not a valid resource')
     else:
-        print('Oops. Use a valid name and type a valid data type. This can be an organisation, dataset or resource.')
+        print('Oops. Use a valid name and type a valid data type. This can be an organisation, project, dataset or resource.')
     
     if len(d) > 0: return pd.Series(d)
 
@@ -74,15 +74,15 @@ def search(query, datatype=None, apikey=None):
              For 'resource' datatypes this defaults to searching the resource name. 
              Additional arguments can be added using the following syntax: 'query1 field2:query2'
              Valid resource fields can be used as field terms for the search.
-    datatype -- organisation, dataset or resource (default None)
+    datatype -- organisation, project, dataset or resource (default None)
     apikey -- valid CKAN API key (default None)
               Private datasets will only be shown to authorised API keys 
     """
     site = RemoteCKAN(url, apikey)
     d = [] #create empty list object to contain API call results
-    if datatype == None: datatype = input('Are you looking for an organisation, a dataset or a resource?\n\n').lower().strip()    
+    if datatype == None: datatype = input('Are you looking for an organisation, a project, a dataset or a resource?\n\n').lower().strip()    
 
-    if datatype == 'organisation':#any(['organisation', 'project']):    
+    if datatype == 'organisation' or datatype == 'project':   
         try:
             d = site.action.organization_autocomplete(q=query)
         except Exception:
@@ -100,7 +100,7 @@ def search(query, datatype=None, apikey=None):
         except Exception:
             print('No resource exists for this search term')        
     else:
-        print('Please try a different search query and type a valid data type. This can be an organisation, dataset or resource.')
+        print('Please try a different search query and type a valid data type. This can be an organisation, project, dataset or resource.')
    
     if len(d) > 0: return pd.DataFrame(d).T
 
