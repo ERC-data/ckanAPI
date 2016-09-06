@@ -12,6 +12,7 @@ Functions:
 Classes & Methods:
     CkanBase(builtins.object)
         __init__(self, items=(), **kws)
+        check(self)
     Organisation(CkanBase)
         create(self, apikey)
         add_member(self, apikey, username, role)
@@ -27,8 +28,9 @@ from ckanapi import RemoteCKAN, NotAuthorized
 import pandas as pd
 
 url='http://energydata.uct.ac.za'
+apikey = input('Paste your apikey to save it for the session\n\n') or None  
 
-def show(name, datatype=None, apikey=None ):
+def show(name, datatype=None, apikey=apikey):
     """Takes a string input and returns an existing CKAN object (organisation, dataset or resource).
     
     Arguments:
@@ -37,27 +39,26 @@ def show(name, datatype=None, apikey=None ):
     datatype -- organisation, project, dataset or resource (default None)
     apikey -- a valid CKAN API key. Private datasets will only be shown to authorised API keys 
                 (default None)
-    """
-    site = RemoteCKAN(url, apikey)     
+    """   
     d = {} #create empty dict object to contain API call results
     if datatype == None: 
         datatype = input('Is this an organisation, a project, a dataset or a resource?\n\n').lower().strip()   
     
     if datatype == 'organisation' or datatype == 'project':
         try:
-            d = site.action.organization_show(id=name, include_datasets=True, 
+            d = RemoteCKAN(url, apikey).action.organization_show(id=name, include_datasets=True, 
                                               include_groups=False, include_tags=False,  
                                               include_followers=False, include_users=False)
         except Exception:
             print('This is neither a valid organisation nor a valid project')
     elif datatype == 'dataset':
         try:        
-            d = site.action.package_show(id=name)
+            d = RemoteCKAN(url, apikey).action.package_show(id=name)
         except Exception:
             print('This is not a valid dataset')
     elif datatype == 'resource':
         try:        
-            d = site.action.resource_show(id=name)
+            d = RemoteCKAN(url, apikey).action.resource_show(id=name)
         except Exception:
             print('This is not a valid resource')
     else:
@@ -66,7 +67,7 @@ def show(name, datatype=None, apikey=None ):
     if len(d) > 0: return pd.Series(d)
 
   
-def search(query, datatype=None, apikey=None):
+def search(query, datatype=None, apikey=apikey):
     """Takes a string input and returns search results matching existing CKAN objects (organisation, dataset or resource).
     
     Arguments:
@@ -78,31 +79,40 @@ def search(query, datatype=None, apikey=None):
     apikey -- valid CKAN API key (default None)
               Private datasets will only be shown to authorised API keys 
     """
-    site = RemoteCKAN(url, apikey)
     d = [] #create empty list object to contain API call results
     if datatype == None: datatype = input('Are you looking for an organisation, a project, a dataset or a resource?\n\n').lower().strip()    
 
     if datatype == 'organisation' or datatype == 'project':   
         try:
-            d = site.action.organization_autocomplete(q=query)
+            d = RemoteCKAN(url, apikey).action.organization_autocomplete(q=query)
         except Exception:
             print('No organisation or project exists for this search term')
     elif datatype == 'dataset': 
         try:
-            d = site.action.package_autocomplete(q=query)
+            d = RemoteCKAN(url, apikey).action.package_autocomplete(q=query)
             for i in d: i.pop('match_displayed') #remove match_displayed:value pair from dicts
         except Exception:
             print('No dataset exists for this search term')
     elif datatype == 'resource': 
         try:
             query = ''.join(['name:', query])
-            d = site.action.resource_search(query=query.split(" "))['results']
+            d = RemoteCKAN(url, apikey).action.resource_search(query=query.split(" "))['results']
         except Exception:
             print('No resource exists for this search term')        
     else:
         print('Please try a different search query and type a valid data type. This can be an organisation, project, dataset or resource.')
    
     if len(d) > 0: return pd.DataFrame(d).T
+        
+def new_user(self, username, email, fullname, apikey=apikey):
+        if self.name is not None:
+            d = dict(id=self.name, name=username, email=email, password='I love data', fullname=fullname)
+        else:
+            raise ValueError('You have not specified the required properties') 
+        try:
+            RemoteCKAN(url, apikey).action.user_create(**d)
+        except NotAuthorized:
+            print('Denied. Check your apikey.')
 
 
 class CkanBase(object):
@@ -121,27 +131,13 @@ class CkanBase(object):
         attrs.update(kws)        
         for key, value in attrs.items():
             setattr(self, key, value)
-        
-#    options = () # define API parameters allowed in function call
-#    required = () # define API parameters required by function call
-#    
-#    def check(self):
-#        d = {k : vars(self).get(k, None) for k in self.options} # create a dict consisting only of permitted key:value pairs
-#        if all([name in d is not None for name in self.required]):
-#            return(d)
-#        else:
-#            raise ValueError('You have not specified the required properties')        
-#    
-#    @staticmethod
-#    def site(url, apikey):
-#        return(RemoteCKAN(url, apikey))
-#    
-#    @classmethod        
-#    def creator(cls, apikey, apicall):
-#        try:
-#            cls.site(url, apikey).action.apicall() # make CKAN API call
-#        except NotAuthorized:
-#            print('denied') # print 'denied' if call not authorised
+            
+    def check(self):    
+         if all(v in vars(self) and getattr(self, v) is not None for v in self.required):
+             d = {k : vars(self).get(k, None) for k in self.options}
+             return(d)
+         else:
+             raise ValueError('You have not specified the required properties')     
 
 
 class Organisation(CkanBase):
@@ -166,57 +162,33 @@ class Organisation(CkanBase):
     """       
     options = ('name', 'title', 'parent', 'description', 'image_url') # define API parameters allowed in function call
     required = ('name',)
-
-# functions using action.create and action.patch    
-#    def create(self, apikey):
-#        self.check()        
-#        self.createhelper(apikey, )   
-#        try:
-#            site.action.organization_create(d) # make CKAN API call
-#        except NotAuthorized:
-#            print('denied') # print 'denied' if call not authorised
             
-    def create(self, apikey):
-        site = RemoteCKAN(url, apikey)
-        d = {k : vars(self).get(k, None) for k in self.options} # create a dict consisting only of permitted key:value pairs
-        if all([name in d for name in self.required]):
-            pass
-        else:
-            raise ValueError('You have not specified the required properties')        
+    def create(self, apikey=apikey):
+        d = self.check() # check that organisation contains all required attributes and only options
         try:
-            site.action.organization_create(**vars(self)) # make CKAN API call
+            RemoteCKAN(url, apikey).action.organization_create(**d) # make CKAN API call
+            return(show(self.name, 'organisation'))
         except NotAuthorized:
-            print('denied') # print 'denied' if call not authorised
-
-            
-    def add_member(self, apikey, username, role):
-        site = RemoteCKAN(url, apikey)
-        options = ('name',)
-        required = ('name',)
-        d = {k : vars(self).get(k, None) for k in options}
-        if all([name in d for name in required]):
-            pass
+            print('Denied. Check your apikey.') # print 'denied' if call not authorised
+           
+    def add_user(self, username, role, apikey=apikey):
+        if self.name is not None:
+            d = dict(id=self.name, username=username, role=role)
         else:
             raise ValueError('You have not specified the required properties') 
-        d['id'] = d.pop('name')
-        d['username'] = username
-        d['role'] = role
         try:
-            site.action.organization_member_create(**d)
+            RemoteCKAN(url, apikey).action.organization_member_create(**d)
         except NotAuthorized:
-            print('denied')
-            
-    def update(self, apikey=None): #require ID!!!!!!
-        site = RemoteCKAN(url, apikey)
-        d = {k : vars(self).get(k, None) for k in self.options} # create a dict consisting only of permitted key:value pairs
-        if all([name in d for name in self.required]):
-            pass
-        else:
-            raise ValueError('You have not specified the required properties')        
+            print('Denied. Check your apikey.')
+                       
+    def update(self, apikey=apikey): #require ID!!!!!!
+        d = self.check()        
         try:
-            site.action.organization_patch(**d) # make CKAN API call
+            RemoteCKAN(url, apikey).action.organization_patch(**d) # make CKAN API call
+            return(show(self.name, 'organisation'))
         except NotAuthorized:
-            print('denied') # print 'denied' if call not authorised
+            print('Denied. Check your apikey.') # print 'denied' if call not authorised
+
 
 class Dataset(CkanBase):
     """
@@ -239,29 +211,21 @@ class Dataset(CkanBase):
     options = ('name', 'title', 'author', 'author_email', 'maintainer', 'maintainer_email', 'license_id', 'private', 'owner_org') # define API parameters allowed in function call
     required = ('name',)    
     
-    def create(self, apikey):
-        site = RemoteCKAN(url, apikey)
-        d = {k : vars(self).get(k, None) for k in self.options} # create a dict consisting only of permitted key:value pairs
-        if all([name in d for name in self.required]):
-            pass
-        else:
-            raise ValueError('You have not specified the required properties')        
+    def create(self, apikey=apikey):
+        d = self.check()
         try:
-            site.action.package_create(d)  # make CKAN API call
+            RemoteCKAN(url, apikey).action.package_create(**d)  # make CKAN API call
+            return(show(self.name, 'dataset'))
         except NotAuthorized:
-            print('denied') # print 'denied' if call not authorised
+            print('Denied. Check your apikey.') # print 'denied' if call not authorised
                             
-    def update(self, apikey):
-        site = RemoteCKAN(url, apikey)
-        d = {k : vars(self).get(k, None) for k in self.options} # create a dict consisting only of permitted key:value pairs
-        if all([name in d for name in self.required]):
-            pass
-        else:
-            raise ValueError('You have not specified the required properties')        
+    def update(self, apikey=apikey):
+        d = self.check()    
         try:
-            site.action.package_patch(d)  # make CKAN API call
+            RemoteCKAN(url, apikey).action.package_patch(**d)  # make CKAN API call
+            return(show(self.name, 'dataset'))
         except NotAuthorized:
-            print('denied') # print 'denied' if call not authorised
+            print('Denied. Check your apikey.') # print 'denied' if call not authorised
         
                 
 class Resource(CkanBase):
@@ -281,17 +245,13 @@ class Resource(CkanBase):
     options = ('package_id', 'name', 'url', 'description', 'upload')  # define API parameters allowed in function call
     required = ('name',)
             
-    def create(self, apikey):
-        site = RemoteCKAN(url, apikey)
-        d = {k : vars(self).get(k, None) for k in self.options} # create a dict consisting only of permitted key:value pairs
-        if all([name in d for name in self.required]):
-            pass
-        else:
-            raise ValueError('You have not specified the required properties')        
+    def create(self, apikey=apikey):
+        d = self.check()        
         try:
-            site.action.resource_create(d)  # make CKAN API call
+            RemoteCKAN(url, apikey).action.resource_create(**d)  # make CKAN API call
+            return(show(self.name, 'resource'))
         except NotAuthorized:
-            print('denied') # print 'denied' if call not authorised
+            print('Denied. Check your apikey.') # print 'denied' if call not authorised
 
 #########################
 #organisation = dict(zip(CkanKeys.organisation, vals))    
