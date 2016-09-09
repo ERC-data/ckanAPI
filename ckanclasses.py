@@ -79,31 +79,31 @@ def search(query, datatype=None, apikey=apikey):
     apikey -- valid CKAN API key (default None)
               Private datasets will only be shown to authorised API keys 
     """
-# Create empty list object to contain API call results    
+    # Create empty list object to contain API call results    
     d = [] 
-# Get datatype if not specified by user 
+    # Get datatype if not specified by user 
     if datatype == None: datatype = input('Are you looking for an organisation, project, dataset, resource or user?\n\n').lower().strip()    
-# Check for datatype organisation or project
+    # Check for datatype organisation or project
     if datatype == 'organisation' or datatype == 'project':   
         d = RemoteCKAN(url, apikey).action.organization_autocomplete(q=query)
-# Check for dataytpe dataset
+    # Check for dataytpe dataset
     elif datatype == 'dataset': 
         d = RemoteCKAN(url, apikey).action.package_autocomplete(q=query)
         for i in d: i.pop('match_displayed') #remove match_displayed:value pair from dicts
-# Check for datatype resource
+    # Check for datatype resource
     elif datatype == 'resource': 
         query = ''.join(['name:', query])
         resources = RemoteCKAN(url, apikey).action.resource_search(query=query.split(" "))['results']
         for r in range(len(resources)):
             d.append({k : resources[r][k] for k in ('description','format','id','last_modified','name','package_id','revision_id')})
-# Check for datatype user
+    # Check for datatype user
     elif datatype == 'user': 
         users = RemoteCKAN(url, apikey).action.user_list(q=query)
         for u in range(len(users)):
             d.append({'username':users[u]['name'], 'fullname':users[u]['fullname']})
     else:
         print('Please try a different search query and type a valid data type. This can be an organisation, project, dataset or resource.\n')
-# Format results dataframe to be returned   
+    # Format results dataframe to be returned   
     if len(d) == 0:
         print('Cannot find %s for this search term' % datatype)
     elif len(d[0]) > len(d) > 0: 
@@ -112,15 +112,19 @@ def search(query, datatype=None, apikey=apikey):
         return(pd.DataFrame(d))
         
 def new_user(username, email=None, fullname=None, apikey=apikey):
-    while email is None:            
-        email = input('Enter new user\'s email address:\n') or None
-    while fullname is None:
-        fullname = input('Enter new user\'s full name:\n') or None            
-    d = dict(name=username.lower().strip(), email=email, password='I love data', fullname=fullname)
-    try:
-        RemoteCKAN(url, apikey).action.user_create(**d)
-    except NotAuthorized:
-        print('Denied. Check your apikey.')
+    s = search(username, 'user')    
+    if s is None:
+        while email is None:            
+            email = input('Enter new user\'s email address:\n') or None
+        while fullname is None:
+            fullname = input('Enter new user\'s full name:\n') or None            
+        d = dict(name=username.lower().strip(), email=email, password='I love data', fullname=fullname) 
+        try:
+            RemoteCKAN(url, apikey).action.user_create(**d)
+        except NotAuthorized:
+            print('Denied. Check your apikey.')
+    else:
+        print('This user already exists\n', s)        
 
 
 class CkanBase(object):
