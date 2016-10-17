@@ -4,6 +4,7 @@ This script defines classes and functions to use with ckanapi for easy data mana
 
 Variables:
     url
+    apikey
     
 Functions:
     show(name, datatype=None, apikey=None)
@@ -24,7 +25,7 @@ Classes & Methods:
         create(self, apikey)
 """
 
-from ckanapi import RemoteCKAN, NotAuthorized
+from ckanapi import RemoteCKAN, NotAuthorized, ValidationError
 import pandas as pd
 
 url='http://energydata.uct.ac.za'
@@ -45,12 +46,15 @@ def show(name, datatype=None, apikey=apikey):
         datatype = input('Is this an organisation, a project, a dataset or a resource?\n\n').lower().strip()   
     
     if datatype == 'organisation' or datatype == 'project':
-        try:
-            d = RemoteCKAN(url, apikey).action.organization_show(id=name, include_datasets=True, 
-                                              include_groups=False, include_tags=False,  
-                                              include_followers=False, include_users=False)
-        except Exception:
-            print('This is neither a valid organisation nor a valid project')
+        if name == 'all':
+            d = RemoteCKAN(url, apikey).action.organization_list()
+        else:
+            try:
+                d = RemoteCKAN(url, apikey).action.organization_show(id=name, include_datasets=True, 
+                                                  include_groups=False, include_tags=False,  
+                                                  include_followers=False, include_users=False)
+            except Exception:
+                print('This is neither a valid organisation nor a valid project')
     elif datatype == 'dataset':
         try:        
             d = RemoteCKAN(url, apikey).action.package_show(id=name)
@@ -98,11 +102,9 @@ def search(query, datatype=None, apikey=apikey):
             d.append({k : resources[r][k] for k in ('description','format','id','last_modified','name','package_id','revision_id')})
     # Check for datatype user
     elif datatype == 'user': 
-        users = RemoteCKAN(url, apikey).action.user_list(q=query)
-        for u in range(len(users)):
-            d.append({'username':users[u]['name'], 'fullname':users[u]['fullname']})
+        d = RemoteCKAN(url, apikey).action.user_autocomplete(q=query)
     else:
-        print('Please try a different search query and type a valid data type. This can be an organisation, project, dataset or resource.\n')
+        print('Please try a different search query and type a valid data type. This can be an organisation, project, dataset, resource or user.\n')
     # Format results dataframe to be returned   
     if len(d) == 0:
         print('Cannot find %s for this search term' % datatype)
@@ -121,8 +123,9 @@ def new_user(username, email=None, fullname=None, apikey=apikey):
         d = dict(name=username.lower().strip(), email=email, password='I love data', fullname=fullname) 
         try:
             RemoteCKAN(url, apikey).action.user_create(**d)
+            return(s)
         except NotAuthorized:
-            print('Denied. Check your apikey.')
+            print('\nDenied. Check your apikey.')
     else:
         print('This user already exists\n', s)        
 
@@ -134,8 +137,6 @@ class CkanBase(object):
         key, value pairs or keyword arguements passed to the object during instance initiation
     
     To see all attributes, use vars(object)
-        
-    Call CkanKeys.organisation for a list of default properties.
     """
     
     def __init__(self, items=(), **kws):
@@ -146,14 +147,14 @@ class CkanBase(object):
             
     def check(self):    
          if all(v in vars(self) and getattr(self, v) is not None for v in self.required):
-             d = {k : vars(self).get(k, None) for k in self.options}
+             d = {k : vars(self).get(k, None) for k in self.attributes}
              return(d)
          else:
-             raise ValueError('You have not specified the required properties')     
+             raise ValueError('You have not specified the required attributes')     
 
 
 class Organisation(CkanBase):
-    """A CKAN organisation with the following properties:
+    """A CKAN organisation with the following attributes:
     
     Options:
     name: The reference ID of the organisation as a string. 
@@ -169,10 +170,8 @@ class Organisation(CkanBase):
     member_add: Requires attribute 'name' (string) and arguments 'apikey', 
             'username' (string), 'role' (string) one of ['member', 'editor', 'admin']
     update:         
-        
-    Call CkanKeys.organisation for a list of default properties.
     """       
-    options = ('name', 'title', 'parent', 'description', 'image_url') # define API parameters allowed in function call
+    attributes = ('name', 'title', 'parent', 'description', 'image_url') # define API parameters allowed in function call
     required = ('name',)
             
     def create(self, apikey=apikey):
@@ -184,19 +183,15 @@ class Organisation(CkanBase):
             print('Denied. Check your apikey.') # print 'denied' if call not authorised
            
     def add_user(self, username, role, apikey=apikey):
-        try:
-            RemoteCKAN(url, apikey).action.user_search(id=username) ######CHECK API CALL!!
-        except None:
-            print('User does not exist. Let\'s create her.')
-            new_user(username)
-        if self.name is not None:
-            d = dict(id=self.name, username=username, role=role)
-        else:
-            raise ValueError('You have not specified the required properties') 
+        d = dict(id=self.name, username=username, role=role)
         try:
             RemoteCKAN(url, apikey).action.organization_member_create(**d)
+        except ValidationError:
+            print('\nUser does not exist. Create new_user() and try again.')
         except NotAuthorized:
-            print('Denied. Check your apikey.')
+            print('\nDenied. Check your apikey.')
+        else:
+            print('Added %s to %s' % (username, self.name))
                        
     def update(self, apikey=apikey): #require ID!!!!!!
         d = self.check()        
@@ -209,7 +204,7 @@ class Organisation(CkanBase):
 
 class Dataset(CkanBase):
     """
-    Define all required parameters to identify a dataset. Datasets have the following properties:
+    Define all required parameters to identify a dataset. Datasets have the following attributes:
     
     Attributes:
         name:
@@ -222,10 +217,10 @@ class Dataset(CkanBase):
         private: A boolean value where 'true' is a private and 'false' a public dataset (default 'false').
         owner_org: Datasets must belong to an organsation.
         
-    Call CkanKeys.dataset for a list of default properties.
+    Call CkanKeys.dataset for a list of default attributes.
     """        
 
-    options = ('name', 'title', 'author', 'author_email', 'maintainer', 'maintainer_email', 'license_id', 'private', 'owner_org') # define API parameters allowed in function call
+    attributes = ('name', 'title', 'author', 'author_email', 'maintainer', 'maintainer_email', 'license_id', 'private', 'owner_org') # define API parameters allowed in function call
     required = ('name',)    
     
     def create(self, apikey=apikey):
@@ -256,11 +251,11 @@ class Resource(CkanBase):
         description:
         upload: full path to file to upload
         
-    Call CkanKeys.resource for a list of all properties.
+    Call CkanKeys.resource for a list of all attributes.
     """ 
     
-    options = ('package_id', 'name', 'url', 'description', 'upload')  # define API parameters allowed in function call
-    required = ('name',)
+    attributes = ('package_id', 'name', 'url', 'description', 'upload')  # define API parameters allowed in function call
+    required = ('package_id', 'name')
             
     def create(self, apikey=apikey):
         d = self.check()        
