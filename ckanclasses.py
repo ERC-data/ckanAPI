@@ -92,8 +92,9 @@ def search(query, datatype=None, apikey=apikey):
         d = RemoteCKAN(url, apikey).action.organization_autocomplete(q=query)
     # Check for dataytpe dataset
     elif datatype == 'dataset': 
-        d = RemoteCKAN(url, apikey).action.package_autocomplete(q=query)
-        for i in d: i.pop('match_displayed') #remove match_displayed:value pair from dicts
+        resources = RemoteCKAN(url, apikey).action.package_search(q=query)['results']
+        for r in range(len(resources)):
+            d.append({k : resources[r][k] for k in ('name','title')})        
     # Check for datatype resource
     elif datatype == 'resource': 
         query = ''.join(['name:', query])
@@ -148,7 +149,7 @@ class CkanBase(object):
     def check(self):    
          if all(v in vars(self) and getattr(self, v) is not None for v in self.required):
              d = {k : vars(self).get(k, None) for k in self.attributes}
-             return(d)
+             return(pd.Series(d))
          else:
              raise ValueError('You have not specified the required attributes')     
 
