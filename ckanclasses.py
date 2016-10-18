@@ -100,7 +100,7 @@ def search(query, datatype=None, apikey=apikey):
         query = ''.join(['name:', query])
         resources = RemoteCKAN(url, apikey).action.resource_search(query=query.split(" "))['results']
         for r in range(len(resources)):
-            d.append({k : resources[r][k] for k in ('description','format','id','last_modified','name','package_id','revision_id')})
+            d.append({k : resources[r][k] for k in                  ('description','format','id','last_modified','name','package_id','revision_id')})
     # Check for datatype user
     elif datatype == 'user': 
         d = RemoteCKAN(url, apikey).action.user_autocomplete(q=query)
