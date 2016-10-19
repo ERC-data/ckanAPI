@@ -25,11 +25,11 @@ Classes & Methods:
         create(self, apikey)
 """
 
-from ckanapi import RemoteCKAN, NotAuthorized, ValidationError
+from ckanapi import RemoteCKAN, NotAuthorized, ValidationError, CKANAPIError
 import pandas as pd
 
 url='http://energydata.uct.ac.za'
-apikey = input('Paste your apikey to save it for the session\n\n') or None  
+apikey = input('Paste your apikey to save it for the session. Some functions are only available to authorised users with a valid apikey.\n') or None  
 
 def show(name, datatype=None, apikey=apikey):
     """Takes a string input and returns an existing CKAN object (organisation, dataset or resource).

@@ -9,20 +9,13 @@ This script helps users create a new CKAN dataset and upload multiple resources 
 
 import ckanclasses
 
-    #1 new or existing dataset?
-    #2 if new, create dataset (ask for attributes)
-    #3 if existing, search for dataset and get attributes
-    #4 get organization_name of dataset
-#5 select folder with resources to be uploaded
-#6 get list of resources in folder
-#7 get upload urls from path
-#8 get names from list
-#9 add description to each list item
+# Section 1: Dataset creation or selection
+print('********************\nThis section helps you create or select a dataset to update.\n********************\n')
 
 dataset_status = input('Are you creating a new dataset?\n')
 dataset = ckanclasses.Dataset()
 
-#User input to create parameters for new dataset
+# Section 1.1 User input to create parameters for new dataset
 if dataset_status.lower().strip() != 'no':
 
     print('Here\'s a list of all available organisations:\n')
@@ -54,12 +47,12 @@ if dataset_status.lower().strip() != 'no':
         dataset.private = 'false'
         
     print('\nUnder what license are you publishing the dataset? \nA) Creative Commons Attribution \nB) Creative Commons Share Alike \nC) Not open \n')
-    check_license = input('Type A, B or C for license type\n')
-    if check_license == 'A':
+    check_license = input('Type A, B or C for license type\n').lower().strip()
+    if check_license == 'a':
         dataset.license_id = 'cc-by'
-    elif check_license == 'B':
+    elif check_license == 'b':
         dataset.license_id = 'cc-by-sa'
-    elif check_license == 'C':
+    elif check_license == 'c':
         dataset.license_id = 'other-closed'
     else:
         dataset.license_id = 'notspecified'
@@ -76,8 +69,16 @@ if dataset_status.lower().strip() != 'no':
             setattr(dataset, make_change, new_attr)
             continue
         else:
-            break
-            
+            print('...creating dataset...\n')
+            try:        
+                dataset.create()
+                break
+            except ckanclasses.CKANAPIError:
+                check_fail = input('Your dataset could not be created. Press enter to try again and check that all attributes are specified correctly or type \'quit\' to exit.\n')
+                if check_fail.lower().strip() == 'quit':
+                    break
+                else:
+                    continue
 else:    
     while True:
         search = input('Type a search term for the dataset you want to update\n')
@@ -116,5 +117,15 @@ else:
                     continue
             break
 
-           
+# Section 2: Dataset creation or selection
+print('********************\nThis section helps you upload multiple resources to your dataset.\n********************\n')
+
+
+#5 select folder with resources to be uploaded
+
+
+#6 get list of resources in folder
+#7 get upload urls from path
+#8 get names from list
+#9 add description to each list item
                 
