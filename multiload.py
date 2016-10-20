@@ -8,6 +8,8 @@ This script helps users create a new CKAN dataset and upload multiple resources 
 """
 
 import ckanclasses
+import os
+import pandas as pd
 
 # Section 1: Dataset creation or selection
 print('********************\nThis section helps you create or select a dataset to update.\n********************\n')
@@ -120,9 +122,20 @@ else:
 # Section 2: Dataset creation or selection
 print('********************\nThis section helps you upload multiple resources to your dataset.\n********************\n')
 
+# Section 2.1: Folder with resources to be uploaded
+resource_folder = input('Enter the PATH to the folder containing the resources you want to add\n')
+all_resources = pd.Series(os.listdir(resource_folder))
+print(all_resources)
 
-#5 select folder with resources to be uploaded
-
+upload_select = "".join(input('List the number corresponding to the resources to be included (indicate range with - and comma separate list of numbers)\n').split())
+if '-' in upload_select: 
+    num_start = upload_select.index('-') - 1
+    num_end = upload_select.index('-') + 1
+    upload_range = list(range(num_start, num_end))
+elif ',' in upload_select:
+    upload_list = list(map(int, upload_select.split(','))) # split input list by commas, map strings to integers, convert to list
+    
+resource_upload = upload_range.append(upload_list)
 
 #6 get list of resources in folder
 #7 get upload urls from path
