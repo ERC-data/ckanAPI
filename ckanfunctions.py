@@ -129,8 +129,8 @@ def select_folder():
     while True:
         try:
             resource_folder = input('Enter the PATH to the folder containing the resources you want to add\n')
-            all_resources = pd.Series(os.listdir(resource_folder))
-            print(all_resources)
+            all_resources = os.listdir(resource_folder)
+            print(pd.Series(all_resources))
             folder_check = input('Is this the right folder?\n')
             if folder_check.lower().strip() == 'no':
                 continue
@@ -143,15 +143,19 @@ def select_folder():
             else:
                 continue
             
-def upload_files():
+def upload_files(all_resources):
     upload_select = "".join(input('List the number corresponding to the resources to be included (indicate range with - and comma separate list of numbers)\n').split())
+    resource_upload = []
     if '-' in upload_select: 
-        num_start = upload_select.index('-') - 1
-        num_end = upload_select.index('-') + 1
-        upload_range = list(range(num_start, num_end))
+        num_start = int(upload_select.split("-", 1)[0])
+        num_end = int(upload_select.split("-", 1)[1])
+        resource_upload = list(range(num_start, num_end + 1))
     elif ',' in upload_select:
-        upload_list = list(map(int, upload_select.split(','))) # split input list by commas, map strings to integers, convert to list
+        resource_upload = list(map(int, upload_select.split(','))) # split input list by commas, map strings to integers, convert to list
+    elif upload_select == 'all' or upload_select == '':
+        resource_upload = list(range(0, len(all_resources)))
     else:
         upload_single = int(upload_select)
+        resource_upload = resource_upload.append(upload_single)
+    return(resource_upload)
     
-    resource_upload = upload_range.append(upload_list)
