@@ -32,9 +32,8 @@ for r in resource_upload:
     r_path = '/'.join([resource_folder, all_resources[r]])
     upload_paths.append(r_path)
 
-resources = pd.DataFrame({'packageid':dataset.name , 'name':all_resources, 'upload':upload_paths})
 
-#8 get names from list
+resources = pd.DataFrame({'packageid':dataset.name , 'name':all_resources, 'upload':upload_paths})
 
 #9 add description to each list item
                 
