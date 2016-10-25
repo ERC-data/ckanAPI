@@ -262,8 +262,9 @@ class Resource(CkanBase):
         d = self.check()        
         try:
             RemoteCKAN(url, apikey).action.resource_create(**d)  # make CKAN API call
-            return(show(self.name, 'resource'))
+            return(search(self.name, 'resource'))
         except NotAuthorized:
+            #return('Denied. Check your apikey.')            
             print('Denied. Check your apikey.') # print 'denied' if call not authorised
 
 #########################

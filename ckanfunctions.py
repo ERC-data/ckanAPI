@@ -129,13 +129,13 @@ def select_folder():
     while True:
         try:
             resource_folder = input('Enter the PATH to the folder containing the resources you want to add\n')
-            all_resources = os.listdir(resource_folder)
-            print(pd.Series(all_resources))
+            resource_list = os.listdir(resource_folder)
+            print(pd.Series(resource_list))
             folder_check = input('Is this the right folder?\n')
             if folder_check.lower().strip() == 'no':
                 continue
             else:
-                return(resource_folder, all_resources)
+                return(resource_folder, resource_list)
         except FileNotFoundError:
             check_quit = input('The PATH does not exist. Press enter to try again or type \'quit\' to exit.\n')
             if check_quit.lower().strip() == 'quit':
@@ -143,8 +143,8 @@ def select_folder():
             else:
                 continue
             
-def upload_files(all_resources):
-    upload_select = "".join(input('List the number corresponding to the resources to be included (indicate range with - and comma separate list of numbers)\n').split())
+def upload_files(resource_list):
+    upload_select = "".join(input('List the number corresponding to the resources to be included (indicate range with \'-\' , comma separate list of numbers and type \'all\' or press enter to select all resources)\n').split())
     resource_upload = []
     if '-' in upload_select: 
         num_start = int(upload_select.split("-", 1)[0])
@@ -153,9 +153,21 @@ def upload_files(all_resources):
     elif ',' in upload_select:
         resource_upload = list(map(int, upload_select.split(','))) # split input list by commas, map strings to integers, convert to list
     elif upload_select == 'all' or upload_select == '':
-        resource_upload = list(range(0, len(all_resources)))
+        resource_upload = list(range(0, len(resource_list)))
     else:
         upload_single = int(upload_select)
         resource_upload = resource_upload.append(upload_single)
     return(resource_upload)
     
+def resource_descriptions(resources):
+    description_check = input('Would you like to add a description to each resource?\n')        
+    if description_check.lower().strip() == 'no':
+        pass
+    else:
+        descriptions = []
+        for r in resources.index:
+            d = input('Enter dataset description for %s\n' % resources['name'][r])
+            descriptions.append(d)
+        resources['description'] = descriptions
+    print('These are your files to upload\n\n', resources)
+    return(resources)
