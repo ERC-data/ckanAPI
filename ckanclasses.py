@@ -259,15 +259,21 @@ class Resource(CkanBase):
     required = ('package_id', 'name')
             
     def create(self, apikey=apikey):
+        if not hasattr(self, 'url'):
+            setattr(self, 'url', 'dummy-url')
+        if  hasattr(self, 'upload'):
+            setattr(self, 'upload', open(self.upload, 'rb'))
         d = self.check()        
         try:
-            RemoteCKAN(url, apikey).action.resource_create(**d)  # make CKAN API call
-            return(search(self.name, 'resource'))
+            new_resource = RemoteCKAN(url, apikey).action.resource_create(**d)  # make CKAN API call
+            setattr(self, 'id', new_resource['id'])             
+            return(show(self.id, 'resource'))
         except NotAuthorized:
             #return('Denied. Check your apikey.')            
             print('Denied. Check your apikey.') # print 'denied' if call not authorised
-
-#########################
-#organisation = dict(zip(CkanKeys.organisation, vals))    
-#pd.Series(organisation)
-
+        except:
+            print('Failed to create %s' % self.name)
+            
+    def create_view(self, title='Data', view_type='recline_view', apikey=apikey):
+        d = dict(resource_id=self.id, title=title, view_type=view_type)
+        RemoteCKAN(url, apikey).action.resource_view_create(**d)

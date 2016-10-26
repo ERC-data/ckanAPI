@@ -52,9 +52,10 @@ while True:
 print('\n********************\nYour resources are being uploaded. Please be patient and confirm their availability online.\n********************')
 
 for i in all_resources.index:
-    my_resource = ckanclasses.Resource(package_id=all_resources['package_id'][i], name=all_resources['name'][i], description=all_resources['description'][i], upload=all_resources['upload'][i])
+    my_resource = ckanclasses.Resource(package_id=all_resources['package_id'][i], name=all_resources['name'][i], description=all_resources['description'][i], url=all_resources['url'][i], upload=all_resources['upload'][i])
     try:
         my_resource.create()
-        print('Successfully uploaded %s' % all_resources['name'][i])
+        my_resource.create_view()
     except:
         print('Failed to upload %s' % all_resources['name'][i])
+        

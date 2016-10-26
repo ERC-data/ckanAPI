@@ -83,10 +83,18 @@ def search_dataset():
     """Prompt user input to search for an existing dataset"""
     dataset = ckanclasses.Dataset()
     while True:
-        search = input('Type a search term for the dataset you want to update\n')
-        s = ckanclasses.search(search, 'dataset')
-        print(s)
-        try:
+        check_private = input('Is this a public dataset? ')
+        if check_private.lower().strip() == 'no':
+            dataset.name = input('Please enter the dataset name - this is the lower-case-hyphenated-word-string at the end of the online url\n')
+            if dataset.name == '':
+                print('You have not specified a dataset to update')
+                continue
+            else:
+                return(dataset)
+        else:
+            search = input('Type a search term for the dataset you want to update\n')
+            s = ckanclasses.search(search, 'dataset')
+            print(s)
             if s.shape[1] == 1:
                 check_dataset = input('Is this the dataset you are looking for?\n')
                 if check_dataset.lower().strip() != 'no':
@@ -98,31 +106,19 @@ def search_dataset():
                 try:
                     search_dataset = int(input('Type the number corresponding to your dataset (or press enter if None)\n'))
                 except ValueError:
-                    check_private = input('Is this a public dataset? ')
-                    if check_private.lower().strip() == 'no':
-                        dataset.name = input('Please enter the dataset name - this is the lower-case-hyphenated-word-string at the end of the online url\n')
-                        if dataset.name == '':
-                            print('You have not specified a dataset to update')
-                            continue
-                        else:
-                            return(dataset)
-                    else:
-                        continue
+                    continue
                 
-                while True:
-                    print(s.ix[[search_dataset]])
-                    check_dataset = input('Is this the dataset you are looking for?\n')
-                    if check_dataset.lower().strip() != 'no':
-                        dataset.name = s['name'][search_dataset]
-                        return(dataset)
-                    else:
-                        search_dataset = int(input('Type the number corresponding to your dataset\n'))
-                        continue
-                
-                return(dataset)
-        
-        except AttributeError:
-                continue
+            while True:
+                print(s.ix[[search_dataset]])
+                check_dataset = input('Is this the dataset you are looking for?\n')
+                if check_dataset.lower().strip() != 'no':
+                    dataset.name = s['name'][search_dataset]
+                    return(dataset)
+                else:
+                    search_dataset = int(input('Type the number corresponding to your dataset\n'))
+                    continue
+            
+            return(dataset)
 
 def select_folder():
     """Prompt user input to select a folder containing resources"""
