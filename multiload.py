@@ -26,17 +26,21 @@ print('\n********************\nThis section helps you upload multiple resources 
 # get list of resources in folder
 (resource_folder, resource_list) = ckanfunctions.select_folder()
 
+#resource_names = [r[:-4] for r in resource_list]
+
 while True:    
     # get upload urls from path
     resource_upload = ckanfunctions.upload_files(resource_list)
     
     upload_paths = []
+    resource_names = []
     for r in resource_upload:
         r_path = '/'.join([resource_folder, resource_list[r]])
         upload_paths.append(r_path)
-    
+        resource_names.append(resource_list[r][:-4])
+        
     # create dataframe containing all resource upload data
-    resources = pd.DataFrame({'package_id':dataset.name , 'name':resource_list, 'upload':upload_paths, 'description':np.nan, 'url':'unused-but-required'})
+    resources = pd.DataFrame({'package_id':dataset.name , 'name':resource_names, 'upload':upload_paths, 'description':np.nan, 'url':'unused-but-required', 'id':np.nan})
     
     # add description to each list item
     all_resources = ckanfunctions.resource_descriptions(resources)
@@ -56,6 +60,7 @@ for i in all_resources.index:
     try:
         my_resource.create()
         my_resource.create_view()
+        all_resources.loc[i, 'id'] = my_resource.id
     except:
         print('Failed to upload %s' % all_resources['name'][i])
         

@@ -27,9 +27,14 @@ Classes & Methods:
 
 from ckanapi import RemoteCKAN, NotAuthorized, ValidationError, CKANAPIError
 import pandas as pd
+import os
 
 url='http://energydata.uct.ac.za'
-apikey = input('Paste your apikey to save it for the session. Some functions are only available to authorised users with a valid apikey.\n') or None  
+if os.environ.get('CKAN-API-KEY') is not None:
+    apikey = os.environ['CKAN-API-KEY']
+else:    
+    apikey = input('Paste your apikey to save it for the session. Some functions are only available to authorised users with a valid apikey.\n') or None
+    os.environ['CKAN-API-KEY'] = apikey   
 
 def show(name, datatype=None, apikey=apikey):
     """Takes a string input and returns an existing CKAN object (organisation, dataset or resource).

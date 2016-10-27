@@ -151,8 +151,7 @@ def upload_files(resource_list):
     elif upload_select == 'all' or upload_select == '':
         resource_upload = list(range(0, len(resource_list)))
     else:
-        upload_single = int(upload_select)
-        resource_upload = resource_upload.append(upload_single)
+        resource_upload = [int(upload_select)]
     return(resource_upload)
     
 def resource_descriptions(resources):
