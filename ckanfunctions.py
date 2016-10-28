@@ -71,7 +71,7 @@ def new_dataset():
             print('...creating dataset...\n')
             try:        
                 dataset.create()
-                break
+                return(dataset)
             except ckanclasses.CKANAPIError:
                 check_fail = input('Your dataset could not be created. Press enter to try again and check that all attributes are specified correctly or type \'quit\' to exit.\n')
                 if check_fail.lower().strip() == 'quit':

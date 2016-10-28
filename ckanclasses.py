@@ -34,7 +34,10 @@ if os.environ.get('CKAN-API-KEY') is not None:
     apikey = os.environ['CKAN-API-KEY']
 else:    
     apikey = input('Paste your apikey to save it for the session. Some functions are only available to authorised users with a valid apikey.\n') or None
-    os.environ['CKAN-API-KEY'] = apikey   
+    if apikey is None:
+        pass
+    else:
+        os.environ['CKAN-API-KEY'] = apikey   
 
 def show(name, datatype=None, apikey=apikey):
     """Takes a string input and returns an existing CKAN object (organisation, dataset or resource).
@@ -69,7 +72,7 @@ def show(name, datatype=None, apikey=apikey):
         try:        
             d = RemoteCKAN(url, apikey).action.resource_show(id=name)
         except Exception:
-            print('This is not a valid resource')
+            print('This is not a valid resource. Check that you are using the resource id, not the name, and try again.')
     else:
         print('Oops. Use a valid name and type a valid data type. This can be an organisation, project, dataset or resource.')
     
