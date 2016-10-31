@@ -40,7 +40,7 @@ while True:
         resource_names.append(resource_list[r].split('.', 1)[0])
         
     # create dataframe containing all resource upload data
-    resources = pd.DataFrame({'package_id':dataset.name , 'name':resource_names, 'upload':upload_paths, 'description':np.nan, 'url':'unused-but-required', 'id':np.nan})
+    resources = pd.DataFrame({'package_id':dataset.name , 'name':resource_names, 'upload':upload_paths, 'description':'', 'url':'unused-but-required', 'id':np.nan})
     
     # add description to each list item
     all_resources = ckanfunctions.resource_descriptions(resources)
@@ -50,7 +50,7 @@ while True:
         break
     else:
         while True:        
-            check_file = int(input('\nWhich file do you want to change (type number)?\n') or 0)
+            check_file = int(input('Which file do you want to change (type number)?\n') or 0)
             print(all_resources['name'][check_file])
             print('ATTRIBUTES: ', list(all_resources.columns))
             make_change = input('Type the attribute you want to change\n').lower().strip()
